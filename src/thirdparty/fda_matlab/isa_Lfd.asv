@@ -1,0 +1,25 @@
+function isaLfd = isa_Lfd(Lfdobj)
+%  ISA_LFD  checks argument is either integer or functional data object.
+
+%  last modified 8 August 2003
+
+isaLfd = 0;
+if strcmp(class(Lfd), 'double')
+   if (Lfd < 0)
+     isaLfd = 1;
+   end
+
+   if (floor(Lfd) ~= Lfd)
+     isaLfd = 1;
+   end
+
+elseif ~isa_Lfd(Lfd)
+   error ('Argument Lfd is not a linear operator.');
+end
+if strcmp(class(Lfdobj), 'lfd') | strcmp(class(Lfdobj), 'Lfd') 
+    isaLfd = 1;
+end
+
+if (strcmp(class(Lfdobj), 'double') 
+    if floor(Lfdobj) == Lfdobj & Lfdobj >= 0
+        isaLfd =

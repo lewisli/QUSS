@@ -1,0 +1,29 @@
+[General Search Parameters]
+Search String=smooth_basis
+Match Case=False
+Skip Text Files=False
+Skip Binary Files=False
+Search ZIPs=False
+Whole Words Only=False
+Count Files First=True
+Recurse Subdirectories=True
+Search Mode=0
+Text File Format=0
+Date Filter Mode=0
+Min Date=1/9/2004
+Max Date=1/9/2004
+Greater Than Days=7
+Less Than Days=7
+Size Filter Mode=0
+Min Size=1000
+Max Size=100000
+Less Than Size=1000
+Greater Than Size=100000
+Field Number=1
+Field Start=1
+Field Width=100
+Separator Char=,
+[Active File Specifications]
+0=*.m
+[Active Directory Specifications]
+0=C:\Matlab

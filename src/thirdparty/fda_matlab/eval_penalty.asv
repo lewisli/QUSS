@@ -1,0 +1,94 @@
+function penaltymat = eval_penalty(basisobj, Lfdobj, ...
+                                   EPS, JMAX, JMIN)
+%  EVAL_PENALTY evaluates a the inner products of a linear 
+%  differential operator L defined by LFDOBJ applied to a set of 
+%  basis functions defined by BASISOBJ.
+%
+%  LFDOBJ is a functional data object defining the order m 
+%  NONHOMOGENEOUS linear differential operator of the form
+%  Lx(t) = w_0(t) x(t) + ... + w_{m-1}(t) D^{m-1}x(t) + 
+%          \exp[w_m(t)] D^m x(t) + ...
+%          a_1(t) u_1(t)  + ... + a_k(t) u_k(t).
+%  This is a change from previous usage where LFDOBJ was assumed to 
+%  define a HOMOGONEOUS differential operator.  See function
+%  @Lfd/Lfd() for details.
+%
+%  Arguments:
+%  BASISOBJ ... A basis object
+%  LFDOBJ   ... A linear differential operator object
+%              applied to the functions that are evaluated.
+%  The following parameters are passed in function INPROD if
+%  they are present.
+%  EPS  ...  Convergence criterion
+%  JMAX ...  Minimum number of doublings of fineness of mesh
+%  JMIN ...  Maximum number of doublings of fineness of mesh
+%
+%  Note that the first two arguments may be interchanged.
+%
+%  Returns:  An array of function values corresponding to the evaluation
+%              arguments in EVALARG
+
+%  last modified 11 December 2003
+
+if ~isa_basis(basisobj)
+    error('Argument BASISOBJ is not a functional basis object.');
+end
+
+%  set up default value for Lfdobj
+
+if nargin < 2 
+    Lfdobj = int2Lfd(0);  
+end
+
+%  set constants determining Richardson extrapolation
+  
+if nargin < 3, EPS  = 1e-4;  end;   %  convergence criterion
+if nargin < 4, JMAX = 15;    end    %  maximum number of iterations
+if nargin < 5, JMIN =  5;    end    %  minimum number of iterations
+
+%  deal with the case where LFDOBJ is an integer
+
+if isnumeric(Lfdobj)
+    nderiv = Lfdobj;
+    if nderiv ~= round(Lfdobj)
+        error('LFDOBJ numeric but not an integer.');
+    end
+    if nderiv < 0
+        error('LFDOBJ an integer but negative.');
+    end
+    Lfdobj = int2Lfd(nderiv);
+end
+    
+%  check LFDOBJ
+
+if ~isa_Lfd(Lfdobj)
+    error (['Argument LFDOBJ is not a ', ...
+            'linear differential operator object.']);
+end
+
+%  determine basis type
+
+type = getbasistype(basisobj);
+
+%  choose appropriate penalty matrix function
+
+switch type
+    case 'bspline'
+        penaltymat = bsplinepen(basisobj, Lfdobj, EPS, JMAX, JMIN);
+    case 'const'
+        rangeval   = getbasisrange(basisobj);
+        penaltymat = rangeval(2) - rangeval(1);
+    case 'expon'
+        penaltymat = exponpen(basisobj, Lfdobj, EPS, JMAX, JMIN);
+    case 'fourier'
+        penaltymat = fourierpen(basisobj, Lfdobj, EPS, JMAX, JMIN);
+    case 'monom'
+        penaltymat = monompen(basisobj, Lfdobj, EPS, JMAX, JMIN);
+    case 'polyg'
+        penaltymat = polygpen(basisobj, Lfdobj, EPS, JMAX, JMIN);
+    case 'power'
+        penaltymat = powerpen(basisobj, Lfdobj, EPS, JMAX, JMIN);
+    otherwise
+        error('Basis type not recognizable');
+end
+

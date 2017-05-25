@@ -1,0 +1,15 @@
+function display(bifdPar)
+
+fprintf('\nFD:\n');
+display(bifdPar.fd);
+
+fprintf('\nestimate = %d\n', bifdPar.estimate);
+display(bifdPar.estimate);
+
+fprintf('\nLfds:\n');
+display(bifdPar.Lfds);
+fprintf('\nlambdas = %.6g\n');
+display(bifdPar.Lfdt);
+fprintf('\nlambdat = %.6g\n');
+display(bifdPar.lambdat);
+

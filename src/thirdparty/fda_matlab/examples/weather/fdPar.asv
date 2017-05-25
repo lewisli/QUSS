@@ -1,0 +1,42 @@
+function fdParobj = fdPar(fdobj, estimate, Lfdobj, lambda)
+% Sets up a functional parameter object
+%  Arguments:
+%  FDOBJ    ... A functional data object.  The basis for this object 
+%               is used to define the functional parameter.
+%               When an initial value is required for iterative 
+%               estimation of a functional parameter, the coefficients
+%               will give the initial values for the iteration.
+%  ESTIMATE ... If nonzero, the parameter is estimated; if zero, the
+%               parameter is held fixed at this value.
+%               By default, this is 1.
+%  LFDOBJ   ... A linear differential operator value or a derivative
+%               value for penalizing the roughness of the object.
+%               By default, this is 2.
+%  LAMBDA   ... The penalty parameter controlling the smoothness of
+%               the estimated parameter.  By default this is 0.
+
+%  last modified 6 May 2003
+
+superiorto('double', 'sparse', 'struct', 'cell', 'char', ...
+    'inline', 'basis');
+
+if ~is_fd(fdobj)
+    error('FDOBJ is not a functional data object.');
+end
+
+if nargin < 4;  lambda = 0;           end
+if nargin < 3;  Lfdobj = int2Lfd(2);  end
+if nargin < 2;  estimate = 1;         end
+
+Lfdobj = int2Lfd(Lfdobj);
+
+if ~isnumeric(lambda)
+    error('LAMBDA is not numeric.');
+end
+if ~is_Lfd(Lfdobj)
+    error('LFDOBJ is not a linear differential operator object.');
+end
+if ~isnumeric(estimate)
+    error('ESTIMATE is not numeric.');
+end
+    

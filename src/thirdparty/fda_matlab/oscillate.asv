@@ -1,0 +1,6 @@
+function Dy = oscillate(t, y, Amat, steptime)
+if nargin < 4, steptime = t + 1; end
+Dy = Amat*y;
+if t >= steptime
+    Dy = Dy + ones(length(y),1);
+end

@@ -1,0 +1,267 @@
+%  test of smoothing by estimating a linear differential operator
+
+%  In this file a test problem, set up in file setup.m, is analyzed.
+
+addpath('../fdaM')
+
+%  ------------------------------------------------------------
+%    A forced first order constant coefficient DIFE
+%        exp(-wt)[x_0 + D^{-1} [exp(wt) u(t)] 
+%    Annihilating operator is L = w x + Dx
+%    Range is [0,2], forcing function is unit step function
+%    with step at 1.  
+%  ------------------------------------------------------------
+
+%  set order of the differential operator
+
+norder = 1;
+
+%  generate data
+
+N =  1;  %  number of curves
+
+n = 200;  %  number of sampling values per curve
+
+range = [0,2];
+tval  = linspace(range(1),range(2),n)';  %  sampling points
+delta = 1/(n-1);
+wtvec = ones(n,1);  %  vector of weights
+
+%  plot some examples
+
+uvec  = zeros(n,1);
+fvec  = uvec;
+%  single step function
+index = (n/4):n;
+uvec(index) = 1;
+
+alpha = 1;
+x0 = 0;
+
+wvec = [1,3,10];
+xmat = zeros(n,length(wvec));
+m = 0;
+for w=wvec
+    m = m + 1;
+    xhom = exp(-w.*tval);
+    index = (n/4):n;
+    fvec(index) = (exp(w.*tval(index)) - exp(w*tval(n/4)))/w;
+    xmat(:,m) = xhom.*(ones(n,1)*x0 + fvec*alpha*w);
+end
+  
+plot(tval,xmat,'-',tval,uvec,'b:')
+xlabel('\fontsize{16} Time')
+ylabel('\fontsize{16} E(t)')
+legend('\fontsize{16}\beta = 1','\beta = 3','\beta = 10','f(t)')
+axis([0,2,0,1.1])
+
+
+%  set rate constant 
+
+w = 1;
+w = 2.5;
+w = 5;
+w = 10;
+w = 20;
+
+xhom = exp(-w.*tval);
+
+%  define forcing function
+%  f(t) = D^{-1} [exp (wt) u(t)]
+
+uvec  = zeros(n,1);
+fvec  = uvec;
+%  single step function
+index = (n/2):n;
+uvec(index) = 1;
+fvec(index) = (exp(w.*tval(index)) - exp(w))/w;
+%  3 step function
+index = (1*n/4)+1:(2*n/4);
+uvec(index) = 1;
+fvec(index) = (1*exp(w.*tval(index)) - exp(w/2))/w;
+index = (2*n/4)+1:(3*n/4);
+uvec(index) = 2;
+fvec(index) = (2*exp(w.*tval(index)) - exp(w) - exp(w/2))/w;
+index = (3*n/4)+1:(4*n/4);
+uvec(index) = 3;
+fvec(index) = (3*exp(w.*tval(index)) - exp(3*w/2) - exp(w) - exp(w/2))/w;
+
+subplot(2,1,1)
+plot(tval,uvec)
+subplot(2,1,2)
+plot(tval,fvec)
+
+%  compute errorless curves Y0 and their NORDER derivatives
+
+sigalpha = 0.0;
+x0       = zeros(1,N);
+alpha    = w.*exp(randn(1,N).*sigalpha);
+Dy0array = zeros(n,N,norder+1);
+Dy0array(:,:,1) = (xhom*ones(1,N)).*(ones(n,1)*x0 + fvec*alpha);
+Dy0array(:,:,2) = -w.*Dy0array(:,:,1) + uvec*alpha;
+y0  = squeeze(Dy0array(:,:,1));
+Dy0 = squeeze(Dy0array(:,:,2));
+
+%  set up a trial value for w
+
+what = 10;
+
+%  plot errorless functions and their derivatives and 
+%  the result of applying the linear differential operator to them
+
+subplot(3,1,1)
+plot(tval,y0)
+ylabel('x')
+subplot(3,1,2)
+plot(tval,Dy0)
+ylabel('Dx')
+subplot(3,1,3)
+Ly0 = what*y0 + Dy0 - (what*uvec)*ones(1,N);
+plot(tval,Ly0)
+ylabel('Lx')
+
+%  do the same using a basis function expansion
+
+nbasis = 154;
+basis  = create_bspline_basis(range,nbasis,5);
+
+yfd0 = data2fd(y0, tval, basis);
+subplot(1,1,1)
+plot(yfd0)
+
+%  set up the linear differential operator object and plot it
+
+nbasisL = 1;
+basisL  = create_constant_basis(range);  
+wfd0    = fd( w*ones(nbasisL,1), basisL);
+afd0    = fd(-w*ones(nbasisL,1), basisL);
+
+%  set up FD object for u(t)
+
+nbasisU = 4;
+norderU = 1;
+basisU  = create_bspline_basis(range,nbasisU,norderU);
+ufd     = data2fd(uvec,tval,basisU);
+Lfdtru  = Lfd(norder, fd2cell(wfd0), fd2cell(afd0), fd2cell(ufd));
+
+plot(Lfdtru)
+
+%  plot the result of applying the linear differential operator
+
+Lymat = eval_fd(tval, yfd0, Lfdtru);
+subplot(1,1,1)
+plot(tval, Lymat)
+
+%  try smoothing with errorless data
+
+wtvec = ones(n,1);
+lambda = 1e4;
+
+smoothlist = smooth_basis(y0, tval, basis, wtvec, Lfdtru, lambda);
+
+yfd = smoothlist.fdobj;
+
+subplot(1,1,1)
+plotfit_fd(y0, tval, yfd)
+
+%  add some error
+
+sigma = 0.1;
+y = y0 + randn(n,N)*sigma;
+
+%  plot some of the curves and data
+
+subplot(1,1,1)
+for i=1:N
+    plot(tval, y(:,i), '.', tval, y0(:,i), '-')
+    %axis([0,2,-.5,1.5])
+    title(['record ',num2str(i)])
+    pause;
+end
+
+save IQ
+
+%  constant basis for first order forced operator
+
+nbasisL = 1;
+basisL  = create_constant_basis(range);  
+
+%  set up the analysis using PDACELL
+
+%  set up BWTCELL to specify weight fn b(t)
+
+wfd0  = fd(zeros(nbasisL,1), basisL);
+bwtstruct.fd       = wfd0;
+bwtstruct.estimate = 1;
+for j=1:norder
+    bwtcell{1,1,j} = bwtstruct;
+end
+
+%  set up AWTCELL to specify weight fn. a(t)
+
+nbasisA = 1;
+basisA  = create_constant_basis(range);
+afd0    = fd(0,basisA);
+awtstruct.fd       = afd0;
+awtstruct.estimate = 1;
+awtcell{1} = awtstruct;
+
+%  set up UFDCELL to specify a single forcing function.  
+
+ufdcell{1} = ufd;     
+
+%  set up the initial linear differential operator, usually
+%  the equivalent of D^m
+
+Lfd0 = Lfd(norder, fd2cell(wfd0), fd2cell(afd0), ufdcell);
+
+outwrd  = 1;     %  level out ouput during iterations
+itermax = 30;    %  maximum number of iterations
+conv    = 1e-5;  %  convergence criterion
+
+%  set values of log_10 lambda
+
+ln10lam = -2.0:1:1;
+ln10lam = -1;
+
+%  do analysis
+
+Lfdout = Lfd0;
+for ln10lami = ln10lam
+    lambda = 10^ln10lami
+    %  estimate the optimal linear differential operator
+    [yfd, Lfdout, resfd] = data2DIFE(y, tval, basis, Lfdout, ...
+                                  bwtcell, awtcell, ufdcell,  ...
+                                  lambda, conv, itermax, outwrd);
+end
+
+%  plot weight functions for optimal operator
+
+plot(Lfdout)
+
+wfdcell = getwfd(Lfdout);
+getcoef(wfdcell{1})
+
+afdcell = getafd(Lfdout);
+getcoef(afdcell{1})
+
+%  smooth the data with the estimated operator
+
+lambda = 10;
+smoothlist = smooth_basis(y, tval, basis, wtvec, Lfdout, lambda);
+
+yfd = smoothlist.fdobj;
+
+subplot(1,1,1)
+plot(tval, y, 'go')
+hold on
+plot(yfd)
+plot(tval,uvec,'r:')
+hold off
+axis([0,2,-0.2,3.2])
+xlabel('\fontsize{16} Education')
+ylabel('\fontsize{16} Performance')
+title(['\fontsize{16} Rate constant = ',num2str(w)])
+
+
+

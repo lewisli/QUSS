@@ -1,0 +1,696 @@
+%  ----------------------------------------------------------
+%          Coupled oscillators without forcing
+%  ----------------------------------------------------------
+
+T = 8*pi;
+range = [0,T];
+
+%  set up sine and cosine as two 1st order eqns
+
+Amat = [0, 1; -1, 0];
+
+yinit = [1, 0]';
+
+oscillate(0, yinit, Amat)
+
+[t, y] = ode45(@oscillate, range, yinit, [], Amat);
+
+subplot(1,1,1)
+plot(t, y)
+
+%  set up two coupled oscillators, each with period 2 pi
+
+bvectru = [1, 0.1, 0.5, 0.5, 1, 0.1]';  %  initial values for unforced example
+
+b0xx = -bvectru(1);
+b1xx = -bvectru(2);
+b0xy = -bvectru(3);
+b1xy = 0;
+b0yx = -bvectru(4);
+b1yx =  0;
+b0yy = -bvectru(5);
+b1yy = -bvectru(6);
+
+Amat = [0,    1,    0,    0;
+        b0xx, b1xx, b0xy, b1xy;
+        0,    0,    0,    1   ;
+        b0yx, b1yx, b0yy, b1yy];
+    
+yinit = [0, 1, 1, 0]';
+
+[t, y] = ode45(@oscillate, range, yinit, [], Amat);
+
+subplot(4,1,1)
+plot(t, y(:,1), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('x')
+subplot(4,1,2)
+plot(t, y(:,2), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('Dx')
+subplot(4,1,3)
+plot(t, y(:,3), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('y')
+subplot(4,1,4)
+plot(t, y(:,4), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('Dy')
+
+%  basis for fitting the data
+
+%  bspline basis
+
+norder = 6;
+nbasis = norder + 14;
+basisobj = create_bspline_basis(range, nbasis, norder);
+
+%  set up quadrature points and weights
+
+nquad = 2001;
+quadpts = [linspace(0,T,nquad)'];
+quadwts = ones(nquad,1);
+quadwts(2:2:nquad-1) = 4;
+quadwts(3:2:nquad-2) = 2;
+quadwts = (T/(nquad-1)).*quadwts/3;
+quadvals = [quadpts, quadwts];
+
+basisobj = putquadvals(basisobj, quadvals);
+
+for ivalue=1:3
+    basisvalues    = eval_basis(quadpts, basisobj, ivalue-1);
+    values{ivalue} = basisvalues.*(sqrt(quadwts)*ones(1,nbasis));
+%     plot(quadpts, full(basisvalues))
+%     pause
+end
+
+basisobj = putvalues(basisobj, values);
+
+%  set up a fine mesh of values
+
+nfine = 201;
+tfine = linspace(0, T, nfine)';
+
+%  smooth numerical solution using basis
+
+indx = 1;
+indy = 3;
+xfd = smooth_basis(t, y(:,indx), basisobj);
+yfd = smooth_basis(t, y(:,indy), basisobj);
+
+subplot(2,1,1)
+plotfit_fd(y(:,indx), t, xfd);
+subplot(2,1,2)
+plotfit_fd(y(:,indy), t, yfd);
+
+%  set up values over TFINE
+
+xvec0 = eval_fd(tfine, xfd);
+yvec0 = eval_fd(tfine, yfd);
+
+%  add some noise
+
+sigma = 0.1;
+xvec = xvec0 + randn(nfine,1).*sigma;
+yvec = yvec0 + randn(nfine,1).*sigma;
+
+%  set up matrices required for profPDA_MIM0
+
+basismat = eval_basis(tfine, basisobj);
+Bmat1 = basismat'*basismat;
+Bmat2 = basismat'*basismat;
+Dmat1 = basismat'*xvec;
+Dmat2 = basismat'*yvec;
+
+%  set up constant basis for weight functions
+
+bbasis = create_constant_basis([0,T]);
+
+bbasis = putquadvals(bbasis, quadvals);
+
+clear bvalues
+for ivalue=1:1
+    bbasisvalues    = eval_basis(quadpts, bbasis);
+    bvalues{ivalue} = bbasisvalues;
+end
+
+bbasis = putvalues(bbasis, bvalues);
+
+%  set up BWTCELL
+%  All coefficients for function are estimated.
+%  All coefficients for first derivative are not.
+%  True values are -1, 0, 0, -1
+
+bwtcell1{1,1} = fdPar(fd(0, bbasis),0,0,1);
+bwtcell1{1,2} = fdPar(fd(0, bbasis),0,0,1);
+bwtcell1{2,1} = fdPar(fd(0, bbasis),0,0,1);
+bwtcell1{2,2} = fdPar(fd(0, bbasis),0,0,0);
+
+bwtcell2{1,1} = fdPar(fd(0, bbasis),0,0,1);
+bwtcell2{1,2} = fdPar(fd(0, bbasis),0,0,0);
+bwtcell2{2,1} = fdPar(fd(0, bbasis),0,0,1);
+bwtcell2{2,2} = fdPar(fd(0, bbasis),0,0,1);
+
+%  struct object for first fitcell
+
+fitstruct1.y = xvec;
+fitstruct1.basisobj = basisobj;
+fitstruct1.basismat = basismat;
+fitstruct1.Bmat = Bmat1;
+fitstruct1.Dmat = Dmat1;
+fitstruct1.bwtcell = bwtcell1;
+fitstruct1.awtcell = {};
+fitstruct1.ufdcell = {};
+fitstruct1.Dorder  = 2;
+
+%  struct object for second fitcell
+
+fitstruct2.y = yvec;
+fitstruct2.basisobj = basisobj;
+fitstruct2.basismat = basismat;
+fitstruct2.Bmat = Bmat2;
+fitstruct2.Dmat = Dmat2;
+fitstruct2.bwtcell = bwtcell2;
+fitstruct2.awtcell = {};
+fitstruct2.ufdcell = {};
+fitstruct2.Dorder  = 2;
+
+% set values of smoothing parameter
+
+lambda = 1e1;
+fitstruct1.lambda = lambda;
+fitstruct2.lambda = lambda;
+
+%  define FITCELL
+
+fitcell{1} = fitstruct1;
+fitcell{2} = fitstruct2;
+
+gradwrd = 0;
+
+bvec0 = bvectru;
+
+%  compute penalty matrix for these values
+
+D0mat = full(getvalues(basisobj,0));
+D1mat = full(getvalues(basisobj,1));
+D2mat = full(getvalues(basisobj,2));
+Lmat = D0mat + 0.1.*D1mat + D2mat;
+penmat = Lmat'*Lmat;
+
+[fitcell, npar] = bvec2fitcell(bvec0, fitcell);
+
+penmatcell = eval_Rsm(npar, fitcell, gradwrd);
+
+
+nvar = length(fitcell);
+Pmat = zeros(nbasis,nbasis);
+mi2 = 0;
+for ivar=1:nvar
+    fitstruct = fitcell{ivar};
+    basisobji = fitstruct.basisobj;
+    nbasis    = getnbasis(basisobji);
+    mi1       = mi2 + 1;
+    mi2       = mi2 + nbasis;
+    indi      = mi1:mi2;
+    fitstruct = fitcell{ivar};
+    penstruct = penmatcell{ivar};
+    Rmati     = penstruct.Rmat;
+    Smati     = penstruct.Smat;
+    Tmati     = penstruct.Tmat;
+    Pmat(indi,indi) = Pmat(indi,indi) + Rmati;
+    Pmat = Pmat + Smati;
+    lamTmati = Tmati;
+    Pmat(indi,:) = Pmat(indi,:) + lamTmati;
+    Pmat(:,indi) = Pmat(:,indi) + lamTmati';
+end
+penmat_MIMO = Pmat;
+
+temp = full(eval_Lphi(1, bwtcell,basisobj));
+temp2 = D0mat+0.1.*D1mat;
+subplot(1,1,1)
+for i=1:nbasis
+    plot(quadpts,[temp(:,i),temp2(:,i)])
+    pause
+end
+
+%  compute solution for these values
+
+[PENSSE, DPENSSE, PEN, coefcell] = ...
+                 profPDA_MIMO(bvec0, fitcell, gradwrd);
+             
+%  plot fit
+
+fdobj1 = fd(coefcell{1}, basisobj);
+fdobj2 = fd(coefcell{2}, basisobj);
+
+subplot(2,1,1)
+plotfit_fd(xvec, tfine, fdobj1)
+subplot(2,1,2)
+plotfit_fd(yvec, tfine, fdobj2)
+
+PENSSE
+
+DPENSSE
+
+%  set up options for FMINUNC
+
+options = optimset('LargeScale', 'off',  ...
+                   'Display',    'iter', ...
+                   'MaxIter',    20,     ...
+                   'GradObj',    'on',  ...
+                   'TolFun',     1e-5,   ...
+                   'TolCon',     1e-5,   ...
+                   'TolX',       1e-5,   ...
+                   'TolPCG',     1e-5);
+
+% optimize the fit
+
+bvec0 = zeros(6,1);
+bvec0 = bvectru;
+
+[bvec, fval, exitflag, output, grad] = ...
+            fminunc(@profPDA_MIMO, bvec0, options, ...
+                    fitcell, 1);
+
+bvec
+bRMSE = sqrt(mean((bvec-bvectru).^2))
+
+[PENSSE, DPENSSE, PEN, coefcell, penmatcell, Dpenmatcell] = ...
+                 profPDA_MIMO(bvec, fitcell, gradwrd);
+
+PEN
+
+fdobj1 = fd(coefcell{1}, basisobj);
+fdobj2 = fd(coefcell{2}, basisobj);
+
+subplot(2,1,1)
+plotfit_fd(xvec, tfine, fdobj1)
+subplot(2,1,2)
+plotfit_fd(yvec, tfine, fdobj2)
+
+PENSSE
+
+DPENSSE
+
+loglam = 0:1:4;
+nlam = length(loglam);
+bRMSE = zeros(nlam,1);
+bvec0 = zeros(6,1);
+for ilam=1:nlam
+    lambda = 10^loglam(ilam)
+    fitstruct1.lambda = lambda;
+    fitstruct2.lambda = lambda;
+    fitcell{1} = fitstruct1;
+    fitcell{2} = fitstruct2;
+    [bvec, fval, exitflag, output, grad] = ...
+        fminunc(@profPDA_MIMO, bvec0, options, ...
+        fitcell, 1);
+    bvec0 = bvec;
+    bvec
+    bRMSE(ilam) = sqrt(mean((bvec-bvectru).^2));
+end
+
+[loglam', bRMSE]
+
+b0xx = -bvec(1);
+b1xx = -bvec(2);
+b0xy = -bvec(3);
+b1xy = 0;
+b0yx = -bvec(4);
+b1yx =  0;
+b0yy = -bvec(5);
+b1yy = -bvec(6);
+
+Amat = [0,    1,    0,    0;
+        b0xx, b1xx, b0xy, b1xy;
+        0,    0,    0,    1   ;
+        b0yx, b1yx, b0yy, b1yy];
+    
+yinit = [0, 1, 1, 0]';
+
+[t, y] = ode45(@oscillate, range, yinit, [], Amat);
+
+figure(2)
+subplot(4,1,1)
+plot(t, y(:,1), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('x')
+subplot(4,1,2)
+plot(t, y(:,2), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('Dx')
+subplot(4,1,3)
+plot(t, y(:,3), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('y')
+subplot(4,1,4)
+plot(t, y(:,4), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('Dy')
+
+%  ----------------------------------------------------------
+%          Coupled oscillators with step forcing
+%  ----------------------------------------------------------
+
+T = 8*pi;
+range = [0,T];
+
+%  set up two coupled oscillators, each with period 2 pi
+
+bvectru = [1, 0.1, 0.5, 0.5, 1, 0.1]';  %  initial values for unforced example
+
+b0xx = -bvectru(1);
+b1xx = -bvectru(2);
+b0xy = -bvectru(3);
+b1xy = 0;
+b0yx = -bvectru(4);
+b1yx =  0;
+b0yy = -bvectru(5);
+b1yy = -bvectru(6);
+
+Amat = [0,    1,    0,    0;
+        b0xx, b1xx, b0xy, b1xy;
+        0,    0,    0,    1   ;
+        b0yx, b1yx, b0yy, b1yy];
+    
+yinit = [0, 1, 1, 0]';
+
+[t, y] = ode45(@oscillate, range, yinit, [], Amat, 4*pi);
+
+subplot(4,1,1)
+plot(t, y(:,1), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('x')
+subplot(4,1,2)
+plot(t, y(:,2), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('Dx')
+subplot(4,1,3)
+plot(t, y(:,3), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('y')
+subplot(4,1,4)
+plot(t, y(:,4), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('Dy')
+
+%  set up quadrature points and weights
+
+nquad = 2001;
+quadpts = [linspace(0,T,nquad)'];
+quadwts = ones(nquad,1);
+quadwts(2:2:nquad-1) = 4;
+quadwts(3:2:nquad-2) = 2;
+quadwts = (T/(nquad-1)).*quadwts/3;
+quadvals = [quadpts, quadwts];
+
+%  basis for fitting the data
+
+%  bspline basis
+
+norder = 6;
+breaks = [linspace(0,T/2,9),T/2,T/2,T/2,linspace(T/2,T,9)];
+nbasis = length(breaks) + norder - 2;
+basisobj = create_bspline_basis(range, nbasis, norder, breaks);
+
+basisobj = putquadvals(basisobj, quadvals);
+
+for ivalue=1:3
+    basisvalues    = eval_basis(quadpts, basisobj, ivalue-1);
+    values{ivalue} = basisvalues.*(sqrt(quadwts)*ones(1,nbasis));
+%     plot(quadpts, full(basisvalues))
+%     pause
+end
+
+basisobj = putvalues(basisobj, values);
+
+%  set up a fine mesh of values
+
+nfine = 201;
+tfine = linspace(0, T, nfine)';
+
+%  smooth numerical solution using basis
+
+indx = 1;
+indy = 3;
+xfd = smooth_basis(t, y(:,indx), basisobj);
+yfd = smooth_basis(t, y(:,indy), basisobj);
+
+subplot(2,1,1)
+plotfit_fd(y(:,indx), t, xfd);
+subplot(2,1,2)
+plotfit_fd(y(:,indy), t, yfd);
+
+%  set up values over TFINE
+
+xvec0 = eval_fd(tfine, xfd);
+yvec0 = eval_fd(tfine, yfd);
+
+%  add some noise
+
+sigma = 0.1;
+xvec = xvec0 + randn(nfine,1).*sigma;
+yvec = yvec0 + randn(nfine,1).*sigma;
+
+%  set up matrices required for profPDA_MIM0
+
+basismat = eval_basis(tfine, basisobj);
+Bmat1 = basismat'*basismat;
+Bmat2 = basismat'*basismat;
+Dmat1 = basismat'*xvec;
+Dmat2 = basismat'*yvec;
+
+%  set up constant basis for weight functions
+
+bbasis = create_constant_basis([0,T]);
+
+bbasis = putquadvals(bbasis, quadvals);
+
+clear bvalues
+for ivalue=1:1
+    bbasisvalues    = eval_basis(quadpts, bbasis);
+    bvalues{ivalue} = bbasisvalues;
+end
+
+bbasis = putvalues(bbasis, bvalues);
+
+%  set up BWTCELL
+%  All coefficients for function are estimated.
+%  All coefficients for first derivative are not.
+%  True values are -1, 0, 0, -1
+
+bwtcell1{1,1} = fdPar(fd(0, bbasis),0,0,1);
+bwtcell1{1,2} = fdPar(fd(0, bbasis),0,0,1);
+bwtcell1{2,1} = fdPar(fd(0, bbasis),0,0,1);
+bwtcell1{2,2} = fdPar(fd(0, bbasis),0,0,0);
+
+bwtcell2{1,1} = fdPar(fd(0, bbasis),0,0,1);
+bwtcell2{1,2} = fdPar(fd(0, bbasis),0,0,0);
+bwtcell2{2,1} = fdPar(fd(0, bbasis),0,0,1);
+bwtcell2{2,2} = fdPar(fd(0, bbasis),0,0,1);
+
+abasis = bbasis;
+awtcell1{1} = fdPar(fd(0, abasis), 0, 0, 1);
+awtcell2{1} = fdPar(fd(0, abasis), 0, 0, 1);
+
+ubasis = create_bspline_basis(range, 2, 1, [0,T/2,T]);
+ufdcell{1} = fd([0;1],ubasis);
+
+%  struct object for first fitcell
+
+fitstruct1.y = xvec;
+fitstruct1.basisobj = basisobj;
+fitstruct1.basismat = basismat;
+fitstruct1.Bmat = Bmat1;
+fitstruct1.Dmat = Dmat1;
+fitstruct1.bwtcell = bwtcell1;
+fitstruct1.awtcell = awtcell1;
+fitstruct1.ufdcell = ufdcell;
+fitstruct1.Dorder  = 2;
+
+%  struct object for second fitcell
+
+fitstruct2.y = yvec;
+fitstruct2.basisobj = basisobj;
+fitstruct2.basismat = basismat;
+fitstruct2.Bmat = Bmat2;
+fitstruct2.Dmat = Dmat2;
+fitstruct2.bwtcell = bwtcell2;
+fitstruct2.awtcell = awtcell2;
+fitstruct2.ufdcell = ufdcell;
+fitstruct2.Dorder  = 2;
+
+% set values of smoothing parameter
+
+lambda = 1e1;
+fitstruct1.lambda = lambda;
+fitstruct2.lambda = lambda;
+
+%  define FITCELL
+
+fitcell{1} = fitstruct1;
+fitcell{2} = fitstruct2;
+
+gradwrd = 0;
+bvectru = [1, 0.1, 0.5, 1, 0.5, 1, 0.1, 1]';  %  initial values for forced example
+bvec0 = bvectru;
+
+%  compute penalty matrix for these values
+
+D0mat = full(getvalues(basisobj,0));
+D1mat = full(getvalues(basisobj,1));
+D2mat = full(getvalues(basisobj,2));
+Lmat = D0mat + 0.1.*D1mat + D2mat;
+penmat = Lmat'*Lmat;
+
+[fitcell, npar] = bvec2fitcell(bvec0, fitcell);
+
+penmatcell = eval_Rsm(npar, fitcell, gradwrd);
+
+
+nvar = length(fitcell);
+Pmat = zeros(nbasis,nbasis);
+mi2 = 0;
+for ivar=1:nvar
+    fitstruct = fitcell{ivar};
+    basisobji = fitstruct.basisobj;
+    nbasis    = getnbasis(basisobji);
+    mi1       = mi2 + 1;
+    mi2       = mi2 + nbasis;
+    indi      = mi1:mi2;
+    fitstruct = fitcell{ivar};
+    penstruct = penmatcell{ivar};
+    Rmati     = penstruct.Rmat;
+    Smati     = penstruct.Smat;
+    Tmati     = penstruct.Tmat;
+    Pmat(indi,indi) = Pmat(indi,indi) + Rmati;
+    Pmat = Pmat + Smati;
+    lamTmati = Tmati;
+    Pmat(indi,:) = Pmat(indi,:) + lamTmati;
+    Pmat(:,indi) = Pmat(:,indi) + lamTmati';
+end
+penmat_MIMO = Pmat;
+
+temp = full(eval_Lphi(1, bwtcell,basisobj));
+temp2 = D0mat+0.1.*D1mat;
+subplot(1,1,1)
+for i=1:nbasis
+    plot(quadpts,[temp(:,i),temp2(:,i)])
+    pause
+end
+
+%  compute solution for these values
+
+[PENSSE, DPENSSE, PEN, coefcell] = ...
+                 profPDA_MIMO(bvec0, fitcell, gradwrd);
+             
+%  plot fit
+
+fdobj1 = fd(coefcell{1}, basisobj);
+fdobj2 = fd(coefcell{2}, basisobj);
+
+subplot(2,1,1)
+plotfit_fd(xvec, tfine, fdobj1)
+subplot(2,1,2)
+plotfit_fd(yvec, tfine, fdobj2)
+
+PENSSE
+
+DPENSSE
+
+%  set up options for FMINUNC
+
+options = optimset('LargeScale', 'off',  ...
+                   'Display',    'iter', ...
+                   'MaxIter',    20,     ...
+                   'GradObj',    'off',  ...
+                   'TolFun',     1e-5,   ...
+                   'TolCon',     1e-5,   ...
+                   'TolX',       1e-5,   ...
+                   'TolPCG',     1e-5);
+
+% optimize the fit
+
+bvec0 = bvectru;
+
+[bvec, fval, exitflag, output, grad] = ...
+            fminunc(@profPDA_MIMO, bvec0, options, ...
+                    fitcell, gradwrd);
+
+bvec
+bRMSE = sqrt(mean((bvec-bvectru).^2))
+
+[PENSSE, DPENSSE, PEN, coefcell, penmatcell, Dpenmatcell] = ...
+                 profPDA_MIMO(bvec, fitcell, gradwrd);
+
+PEN
+
+fdobj1 = fd(coefcell{1}, basisobj);
+fdobj2 = fd(coefcell{2}, basisobj);
+
+subplot(2,1,1)
+plotfit_fd(xvec, tfine, fdobj1)
+subplot(2,1,2)
+plotfit_fd(yvec, tfine, fdobj2)
+
+PENSSE
+
+DPENSSE
+
+loglam = 0:1:4;
+nlam = length(loglam);
+bRMSE = zeros(nlam,1);
+bvec0 = zeros(6,1);
+for ilam=1:nlam
+    lambda = 10^loglam(ilam)
+    fitstruct1.lambda = lambda;
+    fitstruct2.lambda = lambda;
+    fitcell{1} = fitstruct1;
+    fitcell{2} = fitstruct2;
+    [bvec, fval, exitflag, output, grad] = ...
+        fminunc(@profPDA_MIMO, bvec0, options, ...
+        fitcell, 1);
+    bvec0 = bvec;
+    bvec
+    bRMSE(ilam) = sqrt(mean((bvec-bvectru).^2));
+end
+
+[loglam', bRMSE]
+
+b0xx = -bvec(1);
+b1xx = -bvec(2);
+b0xy = -bvec(3);
+b1xy = 0;
+b0yx = -bvec(4);
+b1yx =  0;
+b0yy = -bvec(5);
+b1yy = -bvec(6);
+
+Amat = [0,    1,    0,    0;
+        b0xx, b1xx, b0xy, b1xy;
+        0,    0,    0,    1   ;
+        b0yx, b1yx, b0yy, b1yy];
+    
+yinit = [0, 1, 1, 0]';
+
+[t, y] = ode45(@oscillate, range, yinit, [], Amat);
+
+figure(2)
+subplot(4,1,1)
+plot(t, y(:,1), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('x')
+subplot(4,1,2)
+plot(t, y(:,2), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('Dx')
+subplot(4,1,3)
+plot(t, y(:,3), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('y')
+subplot(4,1,4)
+plot(t, y(:,4), '-', range, [0,0], 'r:', ...
+     range, [-1,-1], 'g:', range, [1,1], 'g:')
+ylabel('Dy')
+
