@@ -35,7 +35,7 @@ else
     SaveOn = true;
 end
 
-FontSize = 24;
+FontSize = 12;
 Data = CFCAStruct.data;
 Time = CFCAStruct.time;
 Name = CFCAStruct.name;

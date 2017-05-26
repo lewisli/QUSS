@@ -17,7 +17,7 @@ if (nargin < 4)
     FontSize=12;
 end
 
-ScatterSize=100;
+ScatterSize=10;
 ObservedLineThickness=3;
 NumPlots=3;
 MaxPlotPerRow=3;

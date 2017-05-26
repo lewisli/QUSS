@@ -14,13 +14,15 @@ load(prior_path);
 
 %% Plot input responses
 FontSize = 20;
-%PlotPriorResponses(PriorData,TruthRealization,FontSize);
-%PlotPriorResponses(PriorPrediction,TruthRealization,FontSize);
+
 
 % Set aside a realization to use as the "truth"
 TruthRealization = 12; 
 NumPriorRealizations=length(PriorData.data);
 AvailableRealizations = setdiff(1:NumPriorRealizations,TruthRealization);
+
+PlotPriorResponses(PriorData,TruthRealization,FontSize);
+%PlotPriorResponses(PriorPrediction,TruthRealization,FontSize);
 
 %% Dimension Reduction On Both Data and Prediction Variables
 
