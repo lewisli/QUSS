@@ -1,18 +1,19 @@
 function [ PriorQuantiles,PosteriorQuantiles ] = ComputeQuantiles(Prior,...
-    Posterior )
-%ComputeQuantiles Compute P10P50P90
-%   Computes P10P50P90 for prior and posterior samples
+    Posterior)
+%COMPUTEQUANTILES Computes P10-P50-P90 for prior and posterior samples
 %
 % Inputs:
-%   Prior: prior runs
-%   Posterior: posterior runs
+%   Prior: (NPriorReals x NTimeSteps) prior runs
+%   Posterior: (NPostReals x NTimeSteps) posterior runs
 %
 % Outputs:
-%   PriorQuantiles: prior quantiles
-%   PosteriorQuantiles: posterior quantiles
+%   PriorQuantiles: (3 x NTimeSteps) prior quantiles
+%   PosteriorQuantiles: (3 x NTimeSteps) posterior quantiles
 %
-% 
+% Author: Lewis Li (lewisli@stanford.edu)
+% Date:    Feburary 7th 2016 
 
+% P10-P50-P90
 quantiles = [.1,.5,.9];
 
 PriorQuantiles = quantile(Prior,quantiles);

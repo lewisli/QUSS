@@ -1,4 +1,5 @@
-function [mpca_scores, mpca_obs] = MixedPCA(FunctionalStruct,truth_real,eigentolerance)
+function [mpca_scores, mpca_obs] = MixedPCA(FunctionalStruct,truth_real,...
+    eigentolerance)
 %MIXEDPCA Computes Mixed PCA of a FPCA Object
 %
 % Inputs:
@@ -9,7 +10,9 @@ function [mpca_scores, mpca_obs] = MixedPCA(FunctionalStruct,truth_real,eigentol
 % Outputs:
 %   mpca_scores: Scores of response variables with 99% of variance kept
 %   mpca_obs: Score of observed data
-
+%
+% Author: Lewis Li (lewisli@stanford.edu)
+% Date: May 24th 2016
 
 % This is the number of variables
 num_wells = length(FunctionalStruct);

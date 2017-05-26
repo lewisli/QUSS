@@ -1,12 +1,15 @@
 function [ h ] = PlotLowDimModels(D,H,DObs,Type,FontSize)
-%PlotLowDimModels Plot a low dimensional projection of the reservoir models
+%PLOTLOWDIMMODELS Plot a low dimensional projection of the reservoir models
+%
 %   Plot the models in some low dimension space according to data and
 %   forecast
+%
 % Inputs:
-%   D: Data
-%   H: Forecast
-%   DObs: Observed data
+%   D: (NReals x NDDim) Data variable
+%   H: (NReals x NHDim) Prediction variable
+%   DObs: (1 x NDim) Observed data
 %   Type: c or f for canonical space or functional space
+%   FontSize: (int) Font size for display [optional]
 % Return:
 %   h: handle to figure
 %
@@ -17,15 +20,13 @@ if (nargin < 4)
     FontSize=12;
 end
 
-ScatterSize=10;
+ScatterSize=50;
 ObservedLineThickness=3;
 NumPlots=3;
 MaxPlotPerRow=3;
 NumDimensions=size(H,2);
 
 for i=1:NumDimensions
-
-    
     if mod(i,NumPlots)==1
         h=figure('Units', 'normalized', 'Position', [0,0,1,1]);
     end
@@ -48,7 +49,6 @@ for i=1:NumDimensions
     set(gcf,'color','w');
     
 end
-
 
 end
 

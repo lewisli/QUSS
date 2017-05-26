@@ -1,21 +1,23 @@
-% function Output = BackTransform(Input, Match)
-% Author: Lewis Li (lewisli@stanford.edu)
-% Date:    Feburary 7th 2016
+function [ Output ] = BackTransform(Input, Match)
+%BACKTRANFORM Undo Normal Score Transform
 %
-% Function   : BackTransform
-%
-% Description:  Computes a histogram transform on Gaussian variable Input such 
-%               that the resulting variable given in Output has a histogram that
-%               matches that of the variable given in Match.
+% Computes a histogram transform on Gaussian variable Input such 
+% that the resulting variable given in Output has a histogram that
+% matches that of the variable given in Match.
 %
 % Parameters :
-% 	Input 	   		Gaussian variable to be transformed
-%	Match:	   		Variable's who's histogram we are trying to match
+%   Input: (NReal x NDim) Gaussian variable to be transformed
+%   Match: (NInputReal x NDim) Variable's who's histogram we are trying to match
 %
-% Return     :
-%	Output:	The transformed variable
-
-function [ Output ] = BackTransform(Input, Match )
+% Return :
+%   Output: (NReal x NDim) The transformed variable
+%
+% References
+%   Isaaks, Edward H., and R. Mohan Srivastava. "Applied geostatistics."
+%   (1989): 1-561.
+%
+% Author: Lewis Li (lewisli@stanford.edu)
+% Date:    Feburary 7th 2016
 
 Output = zeros(size(Input));
 
@@ -29,12 +31,13 @@ for i = 1:size(Input,1)
     
     % Get the cdf values at each value assuming a gaussian with mean/std
     % given by OriginalScores
-    FStar = normcdf(TransformedSamples,mean(OriginalScores),std(OriginalScores));
+    FStar = normcdf(TransformedSamples,mean(OriginalScores),...
+        std(OriginalScores));
     
     % for each FStar, find closest F
     for j = 1:length(FStar)
         
-        [c index] = min(abs(F-FStar(j)));
+        [~,index] = min(abs(F-FStar(j)));
         
         if (index == 1)
             BackTransformedValue(j) = x(index);

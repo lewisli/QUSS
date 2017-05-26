@@ -1,14 +1,10 @@
-% function HarmonicScores = ComputeHarmonicScores(CFCAStruct)
-% Author: Lewis Li (lewisli@stanford.edu)
-% Date:    Feburary 5th 2016
+function [predPCA] = ComputeHarmonicScores(CFCAStruct,PlotLevel,SavePath)
+%COMPUTEHARMONICSCORES Compute harmonic scores for time series using FDA/FPCA
 %
-% Function   : ComputeHarmonicScores
-%
-% Description: Peforms functional principal component analysis on a time series.
-%			   The first step is to perform functional data analysis with a
-%			   spline basis, specified by SplineOrder and SplineKnots. The
-%			   coefficients are used as in the input for Principal Component
-%			   analysis.
+% Peforms functional principal component analysis on a time series. The first 
+% step is to perform functional data analysis with a spline basis, specified by 
+% SplineOrder and SplineKnots. The coefficients are used as in the input for 
+% Principal Component analysis.
 %
 % Parameters :
 %   CFCAStruct: Struct of cfca object we wish to compress
@@ -19,11 +15,11 @@
 %   PlotLevel: Level 4 -> Plot everything
 %   SavePath: Directory to save figures
 %
+% Return :
+%	predPCA: Struct containing the harmonic scores for object
 %
-% Return     :
-%	HarmonicScores:	The harmonic scores w
-
-function [predPCA] = ComputeHarmonicScores(CFCAStruct,PlotLevel,SavePath)
+% Author: Lewis Li (lewisli@stanford.edu)
+% Date:    Feburary 5th 2016
 
 % Default behaviour is to plot nothing
 if (nargin < 2)

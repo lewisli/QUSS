@@ -1,10 +1,10 @@
 function [ nHarm ] = GetNumHarmonics(PCAObj, MinEigenValues, EigenTolerance)
-%GetNumHarmonics Compute the number of functional components is required to
+%GETNUMHARMONICS Compute the number of functional components is required to
 % capture EigenTolerance percentage of the variance.
-%   The PCAObj contains the harmonic scores of a response curve projected
-%   into functional space. As PCA is performed on those coefficients, most
-%   of the variation should (hopefully) be contained in the first few
-%   eigenvalues. 
+%
+% The PCAObj contains the harmonic scores of a response curve projected into 
+% functional space. As PCA is performed on those coefficients, most of the 
+% variation should (hopefully) be contained in the first few eigenvalues. 
 %
 % Inputs:
 %   PCAObj: PCA object from FPCA
