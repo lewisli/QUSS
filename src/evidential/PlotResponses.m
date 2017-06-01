@@ -19,7 +19,7 @@ NumRealizations = size(DataStruct.data,1);
 NumResponses = size(DataStruct.data,3);
 
 MaxCols = min(3,NumResponses);
-NumRows = 2;
+NumRows = min(2,NumResponses);
 
 MaxFiguresPerPage = 6;
 

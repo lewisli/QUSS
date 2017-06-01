@@ -1,4 +1,4 @@
-function [FigHandle] = PlotModelsByWeight( Hc1,Dc1,Hc2,Dc2,dobs_c1,WNorm,...
+function [] = PlotModelsByWeight( Hc1,Dc1,Hc2,Dc2,dobs_c1,WNorm,...
     FontSize)
 %PlotModelsByWeight Plots scatter plot of Hc vs Dc for posterior samples
 %colored by weights given WNorm.
@@ -17,9 +17,6 @@ function [FigHandle] = PlotModelsByWeight( Hc1,Dc1,Hc2,Dc2,dobs_c1,WNorm,...
 % Author: Lewis Li (lewisli@stanford.edu)
 % Date: March 4th 2016
 
-FigHandle = figure('Position', [100, 100, 1000, 800]);
-
-
 % Check if WNorm is unique
 if length(unique(WNorm)) > 1
     scatter(Dc1(:,1),Hc1(:,1),100,[0.5 0.5 0.5],'filled'); hold on;
@@ -35,7 +32,7 @@ end
 
 
 h = plot([dobs_c1(1) dobs_c1(1)],[min(Hc1(:,1)) ...
-    max(Hc1(:,1))],'b','LineWidth',2);
+    max(Hc1(:,1))],'r','LineWidth',2);
 xlabel('d_c','FontSize',FontSize);
 ylabel('h_c','FontSize',FontSize);
 set(gcf,'color','w');
@@ -44,7 +41,7 @@ grid on;
 axis tight; axis square;
 tt1=text(dobs_c1(1)+0.05,min(Hc1(:,1))+0.5,'d_{obs}',...
     'Fontweight','b','FontSize',FontSize);
-set(tt1,'color','b','FontSize',FontSize);
+set(tt1,'color','r','FontSize',FontSize);
 
 end
 

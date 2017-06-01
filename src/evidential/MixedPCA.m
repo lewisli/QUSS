@@ -52,8 +52,8 @@ if truth_real==0
     mpca_obs = 0;
 else
     avail_real = setdiff(1:size(mpca_scores,1),truth_real);
-    mpca_scores = mpca_scores(avail_real,1:ix);
     mpca_obs = mpca_scores(truth_real,1:ix);
+    mpca_scores = mpca_scores(avail_real,1:ix);
 end
 
 end

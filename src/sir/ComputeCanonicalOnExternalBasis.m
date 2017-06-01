@@ -1,6 +1,6 @@
-function [ Hc2, Dc2 ] = ComputeCanonicalOnExternalBasis( HistoricalPrior, ...
-    ForecastPrior,HistoricalProposal,ForecastProposal,EigenvalueTolerance,...
-    HistoricalTruth,OutlierPercentile,NumHistEig,NumPredEig)
+function [dc_proposal, hc_proposal] = ComputeCanonicalOnExternalBasis(PriorData, ...
+    PriorPrediction,ProposalData,ProposalPrediction,EigenTolerance,...
+    Observed)
 %ComputeCanonicalOnExternalBasis Computes canonical coeffcients of
 %posterior samples using same eigenfunctions as prior to get them on the
 %same support
@@ -9,38 +9,70 @@ function [ Hc2, Dc2 ] = ComputeCanonicalOnExternalBasis( HistoricalPrior, ...
 % Author: Lewis Li
 % Date: March 4th 2016
 
-NumSamples = size(HistoricalProposal.data,1);
-Dc2 = zeros(NumSamples,NumHistEig);
-Hc2 = zeros(NumSamples,NumPredEig);,
+NumProposalModels = size(ProposalData.data,1);
 
-h = waitbar(0,'Computing Proposal Hc and Dc...');
-for i = 1:NumSamples
+% Perform dimension reduction on prior data/prediction to get dimensions
+addpath('../src/thirdparty/fda_matlab/');
+PlotLevelPCA = 0;
+
+% If Observed is a struct
+if (isstruct(Observed))
+    data_FPCA = ComputeHarmonicScores(PriorData,Observed,PlotLevelPCA);
+    obs_realization = size(PriorData.data,1) + 1;
+else
+    data_FPCA = ComputeHarmonicScores(PriorData,[],PlotLevelPCA);
+    obs_realization = Observed;
+end
+
+% Perform Mixed PCA
+rmpath('../src/thirdparty/fda_matlab/');
+[mpca_scores, ~] = MixedPCA(data_FPCA,obs_realization,...
+    EigenTolerance);
+addpath('../src/thirdparty/fda_matlab/');
+
+% Perform dimension reduction on prediction variable
+pred_FPCA = ComputeHarmonicScores(PriorPrediction,[],PlotLevelPCA);
+
+% Plot Eigenvalue Functions
+MinEigenValues = 3;
+
+% Get number of required harmonics required for forecasts
+NumPredEig = GetNumHarmonics(pred_FPCA{1}, MinEigenValues,EigenTolerance);
+NumDataEig = size(mpca_scores,2);
+
+dc_proposal = zeros(NumProposalModels, NumDataEig);
+hc_proposal = zeros(NumProposalModels, NumPredEig);
+
+for i = 1:NumProposalModels
     
     % Add truth to proposal for calculating mu
-    HistoricalPrior.data = cat(1,HistoricalPrior.data,...
-        HistoricalProposal.data(i,:,:));
-    ForecastPrior.data = [ForecastPrior.data; ForecastProposal.data(i,:)];
+    PriorData.data = cat(1,PriorData.data,...
+        ProposalData.data(i,:,:));
+    PriorPrediction.data = [PriorPrediction.data; ProposalPrediction.data(i,:)];
     
-    [ ~, ~, Dc1,~,Hc1,~ ,~,~] = ...
-        ComputeCFCAPosterior( HistoricalPrior, ForecastPrior, ...
-        HistoricalTruth, EigenvalueTolerance,OutlierPercentile);
+    [ ~, ~, d_c, h_c] = ...
+        ComputePosteriorPrediction(PriorData, PriorPrediction, ...
+        Observed, EigenTolerance,0,0);
     
-    if (size(Dc1(end,:),2) >=  NumHistEig)
-        Dc2(i,:) = Dc1(end,1:NumHistEig);
+    if (size(d_c(end,:),2) >=  NumDataEig)
+        dc_proposal(i,:) = d_c(end,1:NumDataEig);
+    else
+        dc_proposal(i,1:MinEigenValues) = d_c(end,1:MinEigenValues);
     end
     
-    if (size(Hc1(end,:),2) >=  NumPredEig)
-        Hc2(i,:) = Hc1(end,1:NumPredEig);
+    if (size(h_c(end,:),2) >=  NumPredEig)
+        hc_proposal(i,:) = h_c(end,1:NumPredEig);
+    else
+        hc_proposal(i,1:MinEigenValues) = h_c(end,1:MinEigenValues);
     end
     
-    close all;
+   
+    PriorPrediction.data(end,:)= [];
+    PriorData.data(end,:,:)= [];
     
-    ForecastPrior.data(end,:)= [];
-    HistoricalPrior.data(end,:,:)= [];
-    
-    display(['Computing score for realization ' num2str(i)]);
-    waitbar(i  / NumSamples);
+    if (mod(i,10) == 0)
+        display(['Working on ' num2str(i)]);
+    end
 end
-close(h);
 end
 
