@@ -2,7 +2,26 @@ function [ ProposalParameterVal,ProposalPDFs] = EstimateProposalDistribution(...
     PriorData,ObservedData,PriorParameters)
 %ESTIMATEPROPOSALDISTRIBUTION Estimate the proposal distribution using
 %currently observed data
-%   Detailed explanation goes here
+%   Using the prior data, observed data and prior parameters we estimate
+%   the proposal distribution of f(m_i|d_obs) for each parameter. This
+%   assumes that the parameters are conditionally independent. The
+%   rationale behind the estimation is that prior models with parameter
+%   values closer to the "true" value will yield data close to d_obs. This
+%   is implemented via KDE on the data and parameter value in a reduced
+%   space.
+%
+% Inputs:
+%   PriorData: Struct containing prior data
+%   ObservedData: Struct containing prior data
+%   PriorParameters: (NRealsXNParameters) Matrix containing the prior
+%   parameter values
+%
+% Outputs:
+%   ProposalParameterVal: (NParametersX100) value of proposal PDF
+%   ProposalPDFs: (NParametersX100) pdf of proposal PDF
+%
+% Author: Lewis Li
+% Date: May 31st 2017
 
 addpath('../src/thirdparty/likelihood_continuous/');
 

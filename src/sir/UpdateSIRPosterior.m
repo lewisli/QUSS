@@ -1,8 +1,30 @@
 function [ResampledModels, PosteriorQuantiles,PriorQuantiles] = ...
     UpdateSIRPosterior(PriorData, PriorPrediction, ProposalData, ...
     ProposalPrediction, ObservedData, CurrentTime, LoadCanonicalFromSave)
+%UpdateSIRPosterior Computes updated prediction posterior using SIR.
+%
+% Given the prior, proposal and observed data, we can compute a weight for
+% each proposal model, and accordingly compute the updated posterior.
+%
+% Inputs:
+%   PriorData: Struct containing prior data
+%   PriorPrediction: Struct containing prior prediction
+%   ProposalData: Struct containing proposal data
+%   ProposalPrediction: Struct containing proposal data
+%   ObservedData: Struct containing observed data
+%   CurrentTime: Current time step (days)
+%   LoadCanonicalFromSave: Flag to indicate if canonical coordinates have
+%   been precomputed
+%
+% Outputs:
+%   ResampledModels: Index corresponding to proposal models kept after
+%   resampling
+%   PosteriorQuantiles: Quantiles corresponding to posterior predictions
+%   PriorQuantiles: Quantiles corresponding to prior predictions
+%
+% Author: Lewis Li (lewisli@stanford.edu)
+% Date: March 4th 2016
 
-% Default parameters
 EigenTolerance = 0.95;
 C_D  = 0;
 PlotLevel = 0;

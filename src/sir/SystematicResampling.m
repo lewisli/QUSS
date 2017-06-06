@@ -1,5 +1,5 @@
 function [ResampledStates, NewWeights, Index ] = SystematicResampling(State, ...
-    InputWeights )
+    InputWeights)
 %SystematicResampling Perform systematic resampling on States given
 %InputWeights
 %
