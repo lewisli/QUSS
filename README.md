@@ -2,9 +2,6 @@
 
 This repository contains the companion code repository for [Quantifying Uncertainty in Subsurface Systems](AmazonLink) by Céline Scheidt, Lewis Li, and Jef Caers (John Wiley & Sons). 
 
-### About The Book
-Summary of book...
-
 ### About This Repository
 This repository implements the various UQ strategies discussed in the book. The source code for the algorithms can be found under the [src](lewisli/QUSS/src/) folder. The codebase was developed in [MATLAB](https://www.mathworks.com/)
 
