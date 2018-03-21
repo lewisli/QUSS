@@ -8,7 +8,7 @@ This repository implements the various UQ strategies discussed in the book. The 
 For illustrative purposes, a set of [Jupyter](http://jupyter.org/) tutorials have been prepared. They are as follows:
 
 1. [Dimension Reduction](tutorials/DimRed.ipynb): Showcase of various dimension reduction techniques discussed in Chapter 3.
-2. [DGSA](ltutorials/DGSA.ipynb): Implementation of Distance Based Sensitivty Analysis from Chapter 4.
+2. [DGSA](tutorials/DGSA.ipynb): Implementation of Distance Based Sensitivty Analysis from Chapter 4.
 3. [Bayesian Evidential Learning](tutorials/EvidentialLearning.ipynb). Methodology discussed in Chapter 7, implemented for the Libyan Oil Reservoir case.
 4. [SIR](tutorials/SIR.ipynb): The Sequential Importance Resampling methodology from Chapter 7 applied to the same Libyan Oil Reservoir.
 
