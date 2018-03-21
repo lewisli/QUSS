@@ -17,12 +17,12 @@ FontSize = 20;
 
 
 % Set aside a realization to use as the "truth"
-TruthRealization = 12; 
+TruthRealization = 18; 
 NumPriorRealizations=length(PriorData.data);
 AvailableRealizations = setdiff(1:NumPriorRealizations,TruthRealization);
 
-PlotPriorResponses(PriorData,TruthRealization,FontSize);
-%PlotPriorResponses(PriorPrediction,TruthRealization,FontSize);
+PlotResponses(PriorData,TruthRealization,FontSize);
+%PlotResponses(PriorPrediction,TruthRealization,FontSize);
 
 %% Dimension Reduction On Both Data and Prediction Variables
 
@@ -32,9 +32,9 @@ MinEigenValues = 3; EigenTolerance = 0.97;
 
 % We first perform FPCA on both d and h
 PriorData.spline=[3 40]; % 3rd order spline with 40 knots
-PriorDataFPCA = ComputeHarmonicScores(PriorData,4);
+PriorDataFPCA = ComputeHarmonicScores(PriorData,[]);
 PriorPrediction.spline=[3 20]; % 3rd order spline with 20 knots
-PriorPredictionFPCA = ComputeHarmonicScores(PriorPrediction,0);
+PriorPredictionFPCA = ComputeHarmonicScores(PriorPrediction,[]);
 
 % Perform Mixed PCA on FPCA components for d
 rmpath('../src/thirdparty/fda_matlab/');

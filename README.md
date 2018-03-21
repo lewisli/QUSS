@@ -1,6 +1,6 @@
 # Quantifying Uncertainty in Subsystem Systems
 
-This repository contains the companion code repository for [Quantifying Uncertainty in Subsurface Systems](AmazonLink) by Céline Scheidt, Lewis Li, and Jef Caers (John Wiley & Sons). 
+This repository contains the companion code repository for [Quantifying Uncertainty in Subsurface Systems](https://www.amazon.com/Quantifying-Uncertainty-Subsurface-Geophysical-Monograph/dp/1119325838/ref=sr_1_3?ie=UTF8&qid=1521596848&sr=8-3&keywords=jef+caers) by Céline Scheidt, Lewis Li, and Jef Caers (John Wiley & Sons). 
 
 ### About This Repository
 This repository implements the various UQ strategies discussed in the book. The source code for the algorithms can be found under the [src](lewisli/QUSS/src/) folder. The codebase was developed in [MATLAB](https://www.mathworks.com/)
@@ -9,7 +9,7 @@ For illustrative purposes, a set of [Jupyter](http://jupyter.org/) tutorials hav
 
 1. [Dimension Reduction](tutorials/DimRed.ipynb): Showcase of various dimension reduction techniques discussed in Chapter 3.
 2. [DGSA](ltutorials/DGSA.ipynb): Implementation of Distance Based Sensitivty Analysis from Chapter 4.
-3. [Bayesian Evidential Learning](tutorials/DGSA.ipynb). Methodology discussed in Chapter 7, implemented for the Libyan Oil Reservoir case.
+3. [Bayesian Evidential Learning](tutorials/EvidentialLearning.ipynb). Methodology discussed in Chapter 7, implemented for the Libyan Oil Reservoir case.
 4. [SIR](tutorials/SIR.ipynb): The Sequential Importance Resampling methodology from Chapter 7 applied to the same Libyan Oil Reservoir.
 
 These tutorials can be viewed directly in the browser, or download and re-run. 
